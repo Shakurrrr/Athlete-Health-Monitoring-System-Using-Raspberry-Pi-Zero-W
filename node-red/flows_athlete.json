@@ -1,0 +1,623 @@
+[
+  {
+    "id": "tab-athlete-v2",
+    "type": "tab",
+    "label": "Athlete Dashboard v2",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "mqtt-broker-local",
+    "type": "mqtt-broker",
+    "name": "Local MQTT",
+    "broker": "127.0.0.1",
+    "port": "1883",
+    "clientid": "nr-athlete-ui",
+    "usetls": false,
+    "protocolVersion": "4",
+    "keepalive": "60",
+    "cleansession": true
+  },
+  {
+    "id": "ui-tab-athlete",
+    "type": "ui_tab",
+    "name": "Athlete",
+    "icon": "dashboard",
+    "disabled": false,
+    "hidden": false
+  },
+  {
+    "id": "ui-group-vitals",
+    "type": "ui_group",
+    "name": "Vitals",
+    "tab": "ui-tab-athlete",
+    "order": 1,
+    "disp": true,
+    "width": "6"
+  },
+  {
+    "id": "ui-group-signal",
+    "type": "ui_group",
+    "name": "Signal",
+    "tab": "ui-tab-athlete",
+    "order": 2,
+    "disp": true,
+    "width": "6"
+  },
+  {
+    "id": "ui-group-trends",
+    "type": "ui_group",
+    "name": "Trends",
+    "tab": "ui-tab-athlete",
+    "order": 3,
+    "disp": true,
+    "width": "12"
+  },
+  {
+    "id": "ui-group-status",
+    "type": "ui_group",
+    "name": "Status",
+    "tab": "ui-tab-athlete",
+    "order": 4,
+    "disp": true,
+    "width": "12"
+  },
+  {
+    "id": "mqtt-in",
+    "type": "mqtt in",
+    "z": "tab-athlete-v2",
+    "name": "athlete/data",
+    "topic": "athlete/data",
+    "qos": "0",
+    "datatype": "auto",
+    "broker": "mqtt-broker-local",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "x": 130,
+    "y": 100,
+    "wires": [
+      [
+        "json-parse"
+      ]
+    ]
+  },
+  {
+    "id": "json-parse",
+    "type": "json",
+    "z": "tab-athlete-v2",
+    "name": "JSON → object",
+    "property": "payload",
+    "action": "",
+    "pretty": false,
+    "x": 330,
+    "y": 100,
+    "wires": [
+      [
+        "fn-normalize",
+        "dbg-in"
+      ]
+    ]
+  },
+  {
+    "id": "dbg-in",
+    "type": "debug",
+    "z": "tab-athlete-v2",
+    "name": "raw (off)",
+    "active": false,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "x": 520,
+    "y": 60,
+    "wires": []
+  },
+  {
+    "id": "fn-normalize",
+    "type": "function",
+    "z": "tab-athlete-v2",
+    "name": "Normalize + stamp",
+    "func": "// normalize incoming payload and derive timestamps\nconst p = msg.payload || {};\nlet ts = Date.now();\nif (typeof p.timestamp_ms === 'number') ts = p.timestamp_ms;\nelse if (typeof p.timestamp === 'number') ts = p.timestamp * 1000;\nconst iso = (typeof p.timestamp_iso === 'string') ? p.timestamp_iso : new Date(ts).toISOString();\n\nmsg.payload = {\n  temperature_c: (typeof p.temperature_c === 'number') ? p.temperature_c : null,\n  heart_rate_bpm: (typeof p.heart_rate_bpm === 'number') ? p.heart_rate_bpm : null,\n  spo2_percent: (typeof p.spo2_percent === 'number') ? p.spo2_percent : null,\n  signal_quality: (typeof p.signal_quality === 'number') ? p.signal_quality : 0,\n  wifi_connected: !!p.wifi_connected,\n  iso,\n  ts\n};\nmsg.timestamp = ts; // for charts\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 540,
+    "y": 100,
+    "wires": [
+      [
+        "ui-temp",
+        "sw-hr",
+        "sw-spo2",
+        "ui-quality",
+        "fn-status",
+        "fn-csv",
+        "sw-alerts",
+        "chg-temp-chart"
+      ]
+    ]
+  },
+  {
+    "id": "ui-temp",
+    "type": "ui_gauge",
+    "z": "tab-athlete-v2",
+    "name": "Temperature",
+    "group": "ui-group-vitals",
+    "order": 1,
+    "gtype": "gage",
+    "title": "Temperature (°C)",
+    "label": "°C",
+    "format": "{{value}}",
+    "min": "20",
+    "max": "45",
+    "seg1": "30",
+    "seg2": "38",
+    "className": "",
+    "colors": [
+      "#1f77b4",
+      "#f2c744",
+      "#d62728"
+    ],
+    "x": 820,
+    "y": 60,
+    "wires": []
+  },
+  {
+    "id": "ui-quality",
+    "type": "ui_gauge",
+    "z": "tab-athlete-v2",
+    "name": "Signal Quality",
+    "group": "ui-group-signal",
+    "order": 1,
+    "gtype": "gage",
+    "title": "Quality (0–100)",
+    "label": "",
+    "format": "{{value}}",
+    "min": "0",
+    "max": "100",
+    "seg1": "50",
+    "seg2": "75",
+    "className": "",
+    "colors": [
+      "#d62728",
+      "#f2c744",
+      "#4caf50"
+    ],
+    "x": 840,
+    "y": 100,
+    "wires": []
+  },
+  {
+    "id": "sw-hr",
+    "type": "switch",
+    "z": "tab-athlete-v2",
+    "name": "HR present?",
+    "property": "payload.heart_rate_bpm",
+    "propertyType": "msg",
+    "rules": [
+      {
+        "t": "nnull"
+      }
+    ],
+    "checkall": "true",
+    "repair": false,
+    "outputs": 1,
+    "x": 770,
+    "y": 160,
+    "wires": [
+      [
+        "chg-hr-gauge",
+        "chg-hr-chart"
+      ]
+    ]
+  },
+  {
+    "id": "chg-hr-gauge",
+    "type": "change",
+    "z": "tab-athlete-v2",
+    "name": "payload = HR",
+    "rules": [
+      {
+        "t": "set",
+        "p": "payload",
+        "pt": "msg",
+        "to": "$number(payload.heart_rate_bpm)",
+        "tot": "jsonata"
+      }
+    ],
+    "x": 980,
+    "y": 140,
+    "wires": [
+      [
+        "ui-hr"
+      ]
+    ]
+  },
+  {
+    "id": "ui-hr",
+    "type": "ui_gauge",
+    "z": "tab-athlete-v2",
+    "name": "Heart Rate",
+    "group": "ui-group-vitals",
+    "order": 2,
+    "gtype": "gage",
+    "title": "Heart Rate (bpm)",
+    "label": "bpm",
+    "format": "{{value}}",
+    "min": "30",
+    "max": "200",
+    "seg1": "60",
+    "seg2": "120",
+    "className": "",
+    "colors": [
+      "#1f77b4",
+      "#4caf50",
+      "#d62728"
+    ],
+    "x": 1190,
+    "y": 140,
+    "wires": []
+  },
+  {
+    "id": "chg-hr-chart",
+    "type": "change",
+    "z": "tab-athlete-v2",
+    "name": "payload = HR; ts",
+    "rules": [
+      {
+        "t": "set",
+        "p": "payload",
+        "pt": "msg",
+        "to": "$number(payload.heart_rate_bpm)",
+        "tot": "jsonata"
+      },
+      {
+        "t": "set",
+        "p": "timestamp",
+        "pt": "msg",
+        "to": "payload.ts",
+        "tot": "msg"
+      }
+    ],
+    "x": 990,
+    "y": 180,
+    "wires": [
+      [
+        "ui-chart-hr"
+      ]
+    ]
+  },
+  {
+    "id": "ui-chart-hr",
+    "type": "ui_chart",
+    "z": "tab-athlete-v2",
+    "name": "HR trend",
+    "group": "ui-group-trends",
+    "order": 1,
+    "label": "Heart Rate",
+    "chartType": "line",
+    "legend": "false",
+    "xformat": "HH:mm:ss",
+    "interpolate": "linear",
+    "nodata": "",
+    "ymin": "40",
+    "ymax": "180",
+    "removeOlder": "6",
+    "removeOlderPoints": "",
+    "removeOlderUnit": "3600",
+    "x": 1190,
+    "y": 180,
+    "wires": [
+      [],
+      []
+    ]
+  },
+  {
+    "id": "sw-spo2",
+    "type": "switch",
+    "z": "tab-athlete-v2",
+    "name": "SpO₂ present?",
+    "property": "payload.spo2_percent",
+    "propertyType": "msg",
+    "rules": [
+      {
+        "t": "nnull"
+      }
+    ],
+    "checkall": "true",
+    "repair": false,
+    "outputs": 1,
+    "x": 780,
+    "y": 240,
+    "wires": [
+      [
+        "chg-spo2-gauge",
+        "chg-spo2-chart"
+      ]
+    ]
+  },
+  {
+    "id": "chg-spo2-gauge",
+    "type": "change",
+    "z": "tab-athlete-v2",
+    "name": "payload = SpO₂",
+    "rules": [
+      {
+        "t": "set",
+        "p": "payload",
+        "pt": "msg",
+        "to": "$number(payload.spo2_percent)",
+        "tot": "jsonata"
+      }
+    ],
+    "x": 990,
+    "y": 220,
+    "wires": [
+      [
+        "ui-spo2"
+      ]
+    ]
+  },
+  {
+    "id": "ui-spo2",
+    "type": "ui_gauge",
+    "z": "tab-athlete-v2",
+    "name": "SpO₂",
+    "group": "ui-group-vitals",
+    "order": 3,
+    "gtype": "gage",
+    "title": "SpO₂ (%)",
+    "label": "%",
+    "format": "{{value}}",
+    "min": "85",
+    "max": "100",
+    "seg1": "90",
+    "seg2": "94",
+    "className": "",
+    "colors": [
+      "#d62728",
+      "#f2c744",
+      "#4caf50"
+    ],
+    "x": 1190,
+    "y": 220,
+    "wires": []
+  },
+  {
+    "id": "chg-spo2-chart",
+    "type": "change",
+    "z": "tab-athlete-v2",
+    "name": "payload = SpO₂; ts",
+    "rules": [
+      {
+        "t": "set",
+        "p": "payload",
+        "pt": "msg",
+        "to": "$number(payload.spo2_percent)",
+        "tot": "jsonata"
+      },
+      {
+        "t": "set",
+        "p": "timestamp",
+        "pt": "msg",
+        "to": "payload.ts",
+        "tot": "msg"
+      }
+    ],
+    "x": 1000,
+    "y": 260,
+    "wires": [
+      [
+        "ui-chart-spo2"
+      ]
+    ]
+  },
+  {
+    "id": "ui-chart-spo2",
+    "type": "ui_chart",
+    "z": "tab-athlete-v2",
+    "name": "SpO₂ trend",
+    "group": "ui-group-trends",
+    "order": 2,
+    "label": "SpO₂",
+    "chartType": "line",
+    "legend": "false",
+    "xformat": "HH:mm:ss",
+    "interpolate": "linear",
+    "nodata": "",
+    "ymin": "85",
+    "ymax": "100",
+    "removeOlder": "6",
+    "removeOlderPoints": "",
+    "removeOlderUnit": "3600",
+    "x": 1190,
+    "y": 260,
+    "wires": [
+      [],
+      []
+    ]
+  },
+  {
+    "id": "chg-temp-chart",
+    "type": "change",
+    "z": "tab-athlete-v2",
+    "name": "payload = Temp; ts",
+    "rules": [
+      {
+        "t": "set",
+        "p": "payload",
+        "pt": "msg",
+        "to": "$number(payload.temperature_c)",
+        "tot": "jsonata"
+      },
+      {
+        "t": "set",
+        "p": "timestamp",
+        "pt": "msg",
+        "to": "payload.ts",
+        "tot": "msg"
+      }
+    ],
+    "x": 990,
+    "y": 300,
+    "wires": [
+      [
+        "ui-chart-temp"
+      ]
+    ]
+  },
+  {
+    "id": "ui-chart-temp",
+    "type": "ui_chart",
+    "z": "tab-athlete-v2",
+    "name": "Temp trend",
+    "group": "ui-group-trends",
+    "order": 3,
+    "label": "Temperature",
+    "chartType": "line",
+    "legend": "false",
+    "xformat": "HH:mm:ss",
+    "interpolate": "linear",
+    "nodata": "",
+    "ymin": "20",
+    "ymax": "45",
+    "removeOlder": "6",
+    "removeOlderPoints": "",
+    "removeOlderUnit": "3600",
+    "x": 1190,
+    "y": 300,
+    "wires": [
+      [],
+      []
+    ]
+  },
+  {
+    "id": "fn-status",
+    "type": "function",
+    "z": "tab-athlete-v2",
+    "name": "Build status text",
+    "func": "const p = msg.payload;\nconst status = `Wi-Fi: ${p.wifi_connected ? 'Online' : 'Offline'}  |  Last sample: ${p.iso}`;\nreturn {payload: status};",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 820,
+    "y": 340,
+    "wires": [
+      [
+        "ui-text-status"
+      ]
+    ]
+  },
+  {
+    "id": "ui-text-status",
+    "type": "ui_text",
+    "z": "tab-athlete-v2",
+    "group": "ui-group-status",
+    "order": 1,
+    "label": "Status",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "x": 1040,
+    "y": 340,
+    "wires": []
+  },
+  {
+    "id": "fn-csv",
+    "type": "function",
+    "z": "tab-athlete-v2",
+    "name": "to CSV",
+    "func": "const p = msg.payload;\nconst line = [p.iso, p.temperature_c, p.heart_rate_bpm, p.spo2_percent, p.signal_quality, p.wifi_connected].join(',');\nreturn {payload: line};",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 760,
+    "y": 380,
+    "wires": [
+      [
+        "file-log"
+      ]
+    ]
+  },
+  {
+    "id": "file-log",
+    "type": "file",
+    "z": "tab-athlete-v2",
+    "name": "Append CSV",
+    "filename": "/home/pi/athlete_log.csv",
+    "appendNewline": true,
+    "createDir": true,
+    "overwriteFile": "false",
+    "encoding": "none",
+    "x": 980,
+    "y": 380,
+    "wires": []
+  },
+  {
+    "id": "sw-alerts",
+    "type": "switch",
+    "z": "tab-athlete-v2",
+    "name": "Alerts: HR/SpO₂",
+    "property": "payload",
+    "propertyType": "msg",
+    "rules": [
+      {
+        "t": "jsonata",
+        "v": "$exists(heart_rate_bpm) and (heart_rate_bpm<40 or heart_rate_bpm>160)",
+        "vt": "jsonata"
+      },
+      {
+        "t": "jsonata",
+        "v": "$exists(spo2_percent) and spo2_percent<90",
+        "vt": "jsonata"
+      }
+    ],
+    "checkall": "true",
+    "outputs": 2,
+    "x": 760,
+    "y": 420,
+    "wires": [
+      [
+        "ui-toast"
+      ],
+      [
+        "ui-toast",
+        "dbg-alert"
+      ]
+    ]
+  },
+  {
+    "id": "ui-toast",
+    "type": "ui_toast",
+    "z": "tab-athlete-v2",
+    "position": "top right",
+    "displayTime": "3",
+    "highlight": "",
+    "ok": "OK",
+    "name": "Notify",
+    "x": 980,
+    "y": 420,
+    "wires": []
+  },
+  {
+    "id": "dbg-alert",
+    "type": "debug",
+    "z": "tab-athlete-v2",
+    "name": "ALERT (off)",
+    "active": false,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "x": 980,
+    "y": 460,
+    "wires": []
+  }
+]

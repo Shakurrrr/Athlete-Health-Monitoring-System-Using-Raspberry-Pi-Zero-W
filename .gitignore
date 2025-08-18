@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.env
+.env
+.venv/
+venv/
+athlete_env/
+
+# Node-RED runtime
+node-red/node_modules/
+node-red/package-lock.json
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+*.csv

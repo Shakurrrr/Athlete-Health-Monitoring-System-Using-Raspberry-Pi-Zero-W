@@ -1,0 +1,11 @@
+[Unit]
+Description=Bring up fallback hotspot if Wi-Fi not connected
+After=NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/wifi_fallback.sh
+
+[Install]
+WantedBy=multi-user.target

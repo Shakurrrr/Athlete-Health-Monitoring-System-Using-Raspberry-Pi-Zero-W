@@ -1,0 +1,17 @@
+[Unit]
+Description=Node-RED (local npm install)
+After=network.target
+Wants=network-online.target
+
+[Service]
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/.node-red
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+Environment=NODE_OPTIONS=--max_old_space_size=128
+ExecStart=/home/pi/.node-red/node_modules/.bin/node-red -u /home/pi/.node-red -p 1880 -H 0.0.0.0
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
