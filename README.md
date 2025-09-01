@@ -59,4 +59,5 @@ Optional **fallback AP**: create a profile `Athlete-Setup` and enable `wifi-fall
 - I²C detect: `i2cdetect -y 1` → look for `0x57`
 
 ## License
-MIT
+MIT Licenced
+Released
