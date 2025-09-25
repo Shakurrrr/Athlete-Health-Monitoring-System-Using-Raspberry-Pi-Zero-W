@@ -1,12 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Athlete monitor (real-time):
-- MAX30102 read in a background sampler thread (non-blocking)
-- 4 s sliding window for robust HR/SpO2; publish every 0.5 s
-- DS18B20 temperature (cached)
-- Wi-Fi status LED on GPIO27
-- MQTT JSON schema documented in README
-"""
+
 
 import time
 import json
