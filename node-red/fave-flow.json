@@ -1,0 +1,459 @@
+[
+    {
+        "id": "ccb409f1136d8cfa",
+        "type": "tab",
+        "label": "Admin",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "0459535cefd33c65",
+        "type": "mqtt in",
+        "z": "ccb409f1136d8cfa",
+        "name": "athlete/data",
+        "topic": "athlete/data",
+        "qos": "1",
+        "datatype": "auto",
+        "broker": "broker1",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 110,
+        "y": 60,
+        "wires": [
+            [
+                "85fe81c3ac714b88"
+            ]
+        ]
+    },
+    {
+        "id": "85fe81c3ac714b88",
+        "type": "json",
+        "z": "ccb409f1136d8cfa",
+        "name": "JSON → object",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 240,
+        "y": 160,
+        "wires": [
+            [
+                "f8615ac9bdba3884"
+            ]
+        ]
+    },
+    {
+        "id": "f8615ac9bdba3884",
+        "type": "function",
+        "z": "ccb409f1136d8cfa",
+        "name": "Normalize + stamp",
+        "func": "const p = msg.payload || {};\nlet ts = (typeof p.timestamp_ms === 'number') ? p.timestamp_ms\n         : (typeof p.timestamp === 'number') ? p.timestamp * 1000\n         : Date.now();\nmsg.ts = ts;\nmsg.payload = {\n  temperature_c: (typeof p.temperature_c === 'number') ? p.temperature_c : null,\n  heart_rate_bpm: (typeof p.heart_rate_bpm === 'number') ? p.heart_rate_bpm : null,\n  spo2_percent: (typeof p.spo2_percent === 'number') ? p.spo2_percent : null,\n  signal_quality: (typeof p.signal_quality === 'number') ? p.signal_quality : 0,\n  wifi_connected: !!p.wifi_connected,\n  iso: (typeof p.timestamp_iso_utc === 'string') ? p.timestamp_iso_utc : new Date(ts).toISOString()\n};\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 450,
+        "y": 220,
+        "wires": [
+            [
+                "26e01f57c57e6850",
+                "c1ab8a742237dd8a",
+                "16f7f90f7ff078a7",
+                "a14ccc11e325986a",
+                "8bb6aa253ad7f062",
+                "aa1122061d26cd49",
+                "0f90c1c3d960a944",
+                "286824ae8dcdee0d"
+            ]
+        ]
+    },
+    {
+        "id": "26e01f57c57e6850",
+        "type": "function",
+        "z": "ccb409f1136d8cfa",
+        "name": "payload = temperature",
+        "func": "const p = msg.payload || {};\nmsg.payload = Number(p.temperature_c ?? 0);\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 820,
+        "y": 60,
+        "wires": [
+            [
+                "09758943c0288fcc"
+            ]
+        ]
+    },
+    {
+        "id": "09758943c0288fcc",
+        "type": "ui_gauge",
+        "z": "ccb409f1136d8cfa",
+        "name": "Temperature",
+        "group": "7bc6361a6c5a07e3",
+        "order": 1,
+        "gtype": "gage",
+        "title": "Temperature (°C)",
+        "label": "°C",
+        "format": "{{value}}",
+        "min": "20",
+        "max": "45",
+        "colors": [
+            "#1f77b4",
+            "#f2c744",
+            "#d62728"
+        ],
+        "seg1": "30",
+        "seg2": "38",
+        "x": 1020,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "c1ab8a742237dd8a",
+        "type": "function",
+        "z": "ccb409f1136d8cfa",
+        "name": "payload = quality",
+        "func": "const p = msg.payload || {};\nmsg.payload = Number(p.signal_quality ?? 0);\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 820,
+        "y": 100,
+        "wires": [
+            [
+                "e6157dabcab944eb"
+            ]
+        ]
+    },
+    {
+        "id": "e6157dabcab944eb",
+        "type": "ui_gauge",
+        "z": "ccb409f1136d8cfa",
+        "name": "Signal Quality",
+        "group": "d026a3d863ef9d0f",
+        "order": 1,
+        "gtype": "gage",
+        "title": "Quality (0-100)",
+        "label": "",
+        "format": "{{value}}",
+        "min": "0",
+        "max": "100",
+        "colors": [
+            "#d62728",
+            "#f2c744",
+            "#4caf50"
+        ],
+        "seg1": "50",
+        "seg2": "75",
+        "x": 1030,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "16f7f90f7ff078a7",
+        "type": "function",
+        "z": "ccb409f1136d8cfa",
+        "name": "payload = HR",
+        "func": "const p = msg.payload || {};\nmsg.payload = Number(p.heart_rate_bpm ?? 0);\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 1010,
+        "y": 140,
+        "wires": [
+            [
+                "aa8a8b7d2fe08f72"
+            ]
+        ]
+    },
+    {
+        "id": "aa8a8b7d2fe08f72",
+        "type": "ui_gauge",
+        "z": "ccb409f1136d8cfa",
+        "name": "Heart Rate",
+        "group": "7bc6361a6c5a07e3",
+        "order": 2,
+        "gtype": "gage",
+        "title": "Heart Rate (bpm)",
+        "label": "bpm",
+        "format": "{{value}}",
+        "min": "30",
+        "max": "200",
+        "colors": [
+            "#1f77b4",
+            "#4caf50",
+            "#d62728"
+        ],
+        "seg1": "60",
+        "seg2": "120",
+        "x": 1210,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "a14ccc11e325986a",
+        "type": "function",
+        "z": "ccb409f1136d8cfa",
+        "name": "payload = HR; timestamp",
+        "func": "const p = msg.payload || {};\nmsg.payload = Number(p.heart_rate_bpm ?? 0);\nmsg.timestamp = msg.ts || Date.now();\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 1020,
+        "y": 180,
+        "wires": [
+            [
+                "3ca4cf828b38f29a"
+            ]
+        ]
+    },
+    {
+        "id": "3ca4cf828b38f29a",
+        "type": "ui_chart",
+        "z": "ccb409f1136d8cfa",
+        "name": "HR trend",
+        "group": "e9b57a4a6daa2c44",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "label": "Heart Rate",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "40",
+        "ymax": "180",
+        "removeOlder": "3",
+        "removeOlderUnit": "3600",
+        "outputs": 2,
+        "x": 1210,
+        "y": 180,
+        "wires": [
+            [],
+            []
+        ]
+    },
+    {
+        "id": "8bb6aa253ad7f062",
+        "type": "function",
+        "z": "ccb409f1136d8cfa",
+        "name": "payload = SpO2",
+        "func": "const p = msg.payload || {};\nmsg.payload = Number(p.spo2_percent ?? 0);\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 1020,
+        "y": 220,
+        "wires": [
+            [
+                "b855b4282a5a6dcb"
+            ]
+        ]
+    },
+    {
+        "id": "b855b4282a5a6dcb",
+        "type": "ui_gauge",
+        "z": "ccb409f1136d8cfa",
+        "name": "SpO2",
+        "group": "7bc6361a6c5a07e3",
+        "order": 3,
+        "gtype": "gage",
+        "title": "SpO2 (%)",
+        "label": "%",
+        "format": "{{value}}",
+        "min": "85",
+        "max": "100",
+        "colors": [
+            "#d62728",
+            "#f2c744",
+            "#4caf50"
+        ],
+        "seg1": "90",
+        "seg2": "94",
+        "x": 1210,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "aa1122061d26cd49",
+        "type": "function",
+        "z": "ccb409f1136d8cfa",
+        "name": "payload = SpO2; timestamp",
+        "func": "const p = msg.payload || {};\nmsg.payload = Number(p.spo2_percent ?? 0);\nmsg.timestamp = msg.ts || Date.now();\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 1030,
+        "y": 260,
+        "wires": [
+            [
+                "d1b669c1a8ec960b"
+            ]
+        ]
+    },
+    {
+        "id": "d1b669c1a8ec960b",
+        "type": "ui_chart",
+        "z": "ccb409f1136d8cfa",
+        "name": "SpO2 trend",
+        "group": "e9b57a4a6daa2c44",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "label": "SpO2",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "85",
+        "ymax": "100",
+        "removeOlder": "3",
+        "removeOlderUnit": "3600",
+        "outputs": 2,
+        "x": 1210,
+        "y": 260,
+        "wires": [
+            [],
+            []
+        ]
+    },
+    {
+        "id": "0f90c1c3d960a944",
+        "type": "function",
+        "z": "ccb409f1136d8cfa",
+        "name": "payload = Temp; timestamp",
+        "func": "const p = msg.payload || {};\nmsg.payload = Number(p.temperature_c ?? 0);\nmsg.timestamp = msg.ts || Date.now();\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 1030,
+        "y": 300,
+        "wires": [
+            [
+                "e2babe98bf06a005"
+            ]
+        ]
+    },
+    {
+        "id": "e2babe98bf06a005",
+        "type": "ui_chart",
+        "z": "ccb409f1136d8cfa",
+        "name": "Temperature trend",
+        "group": "e9b57a4a6daa2c44",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "label": "Temperature",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "20",
+        "ymax": "45",
+        "removeOlder": "3",
+        "removeOlderUnit": "3600",
+        "outputs": 2,
+        "x": 1210,
+        "y": 300,
+        "wires": [
+            [],
+            []
+        ]
+    },
+    {
+        "id": "286824ae8dcdee0d",
+        "type": "function",
+        "z": "ccb409f1136d8cfa",
+        "name": "Build status line",
+        "func": "const p = msg.payload || {};\nconst txt = `Wi-Fi: ${p.wifi_connected ? 'Online' : 'Offline'} | Last sample: ${p.iso}`;\nreturn { payload: txt };",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 800,
+        "y": 340,
+        "wires": [
+            [
+                "671addcc73f1f18c"
+            ]
+        ]
+    },
+    {
+        "id": "671addcc73f1f18c",
+        "type": "ui_text",
+        "z": "ccb409f1136d8cfa",
+        "group": "ae0176739d45c1a7",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "Status",
+        "label": "Status",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 1020,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "broker1",
+        "type": "mqtt-broker",
+        "name": "Local MQTT",
+        "broker": "127.0.0.1",
+        "port": "1883",
+        "clientid": "nr-athlete-ui",
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true
+    },
+    {
+        "id": "7bc6361a6c5a07e3",
+        "type": "ui_group",
+        "name": "Vitals",
+        "tab": "e04b3d4806468516",
+        "order": 1,
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "d026a3d863ef9d0f",
+        "type": "ui_group",
+        "name": "Signal",
+        "tab": "e04b3d4806468516",
+        "order": 2,
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "e9b57a4a6daa2c44",
+        "type": "ui_group",
+        "name": "Trends",
+        "tab": "e04b3d4806468516",
+        "order": 3,
+        "disp": true,
+        "width": "12",
+        "collapse": false
+    },
+    {
+        "id": "ae0176739d45c1a7",
+        "type": "ui_group",
+        "name": "Status",
+        "tab": "e04b3d4806468516",
+        "order": 4,
+        "disp": true,
+        "width": "12",
+        "collapse": false
+    },
+    {
+        "id": "e04b3d4806468516",
+        "type": "ui_tab",
+        "name": "Doctor's Dashboard",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    }
+]
