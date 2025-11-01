@@ -10,7 +10,7 @@ from collections import deque
 from gpiozero import LED
 from w1thermsensor import W1ThermSensor, W1ThermSensorError
 from paho.mqtt import client as mqtt
-from spo2calc import estimate_spo2  # local module
+from spo2calc import estimate_spo2  
 
 # ---------- CONFIG ----------
 MQTT_BROKER = "localhost"
@@ -18,7 +18,7 @@ MQTT_PORT   = 1883
 MQTT_TOPIC  = "athlete/data"
 MQTT_CLIENT_ID = "athlete-pi"
 
-WIFI_LED_PIN = 27  # simple LED; if inverted, swap wiring
+WIFI_LED_PIN = 27  
 
 SAMPLE_RATE_HZ   = 100
 WINDOW_SEC       = 4.0
@@ -90,7 +90,7 @@ def init_max30102():
     global sensor, have_max
     try:
         import max30102 as max30102_local
-        sensor = max30102_local.MAX30102(gpio_pin=None)  # polling mode (no INT)
+        sensor = max30102_local.MAX30102(gpio_pin=None) 
         have_max = True
         return True
     except Exception as e:
@@ -136,7 +136,7 @@ def sampler_thread():
     global warmed_up
     while not stop_evt.is_set() and sensor is not None:
         try:
-            red, ir = sensor.read_sequential(READ_CHUNK_N)  # ~READ_CHUNK_SEC
+            red, ir = sensor.read_sequential(READ_CHUNK_N)
             if red and ir:
                 with buffers_lock:
                     red_buf.extend(red)
